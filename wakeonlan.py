@@ -52,6 +52,7 @@ def send_magic_packet(*macs, **kwargs):
     """
     ip = kwargs.pop("ip_address", BROADCAST_IP)
     port = kwargs.pop("port", DEFAULT_PORT)
+    interface = kwargs.pop("interface", None)
     for k in kwargs:
         raise TypeError(
             "send_magic_packet() got an unexpected keyword " "argument {!r}".format(k)
@@ -62,6 +63,9 @@ def send_magic_packet(*macs, **kwargs):
     with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
         sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
         sock.connect((ip, port))
+
+        if interface is not None:
+            sock.setsockopt(socket.SOL_SOCKET, 25, (interface+'\0').encode())
         for packet in packets:
             sock.send(packet)
 
@@ -95,8 +99,15 @@ def main(argv=None):
         help="The port of the host to send the magic packet to "
         "(default {}).".format(DEFAULT_PORT),
     )
+    parser.add_argument(
+        "-face",
+        metavar="interface",
+        default=None,
+        help="The interface you want to send the magic packet on "
+        "(default {}).".format(None),
+    )
     args = parser.parse_args(argv)
-    send_magic_packet(*args.macs, ip_address=args.i, port=args.p)
+    send_magic_packet(*args.macs, ip_address=args.i, port=args.p, interface=args.iface)
 
 
 if __name__ == "__main__":  # pragma: nocover
